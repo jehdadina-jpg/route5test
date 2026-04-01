@@ -19,14 +19,23 @@ window.addEventListener('scroll', () => {
 }, { passive: true });
 
 /* ─── Use-case tabs ────────────────────────────── */
+function activateTab(id) {
+  document.querySelectorAll('.uc-tab').forEach(b => b.classList.toggle('active', b.dataset.uc === id));
+  document.querySelectorAll('.uc-panel').forEach(p => p.classList.toggle('active', p.id === 'uc-' + id));
+}
+
 document.querySelectorAll('.uc-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id = btn.dataset.uc;
-    document.querySelectorAll('.uc-tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.uc-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    const panel = document.getElementById('uc-' + id);
-    if (panel) panel.classList.add('active');
+  btn.addEventListener('click', () => activateTab(btn.dataset.uc));
+});
+
+/* Footer Use-case links */
+document.querySelectorAll('.footer-uc-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const id = link.dataset.uc;
+    activateTab(id);
+    const target = document.getElementById('usecases');
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
   });
 });
 
@@ -66,43 +75,115 @@ const countObs = new IntersectionObserver(entries => {
 const metGrid = document.querySelector('.metrics-grid');
 if (metGrid) countObs.observe(metGrid);
 
-/* ─── Animated beam background (hero) ─────────── */
-(function initBeams() {
+/* ─── Animated Particles Background (Global) ─────────── */
+(function initParticles() {
   const canvas = document.createElement('canvas');
-  canvas.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5;';
+  canvas.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.4;';
   document.body.prepend(canvas);
 
   const ctx = canvas.getContext('2d');
-  const palette = [
-    [37, 99, 235],   // blue
-    [124, 58, 237],  // purple
-    [234, 88, 12],   // orange
-  ];
+  let particles = [];
+  let w = canvas.width = window.innerWidth;
+  let h = canvas.height = window.innerHeight;
 
+  const colors = ['rgba(37,99,235,0.6)', 'rgba(124,58,237,0.6)', 'rgba(234,88,12,0.6)'];
+
+  class Particle {
+    constructor() {
+      this.x = Math.random() * w;
+      this.y = Math.random() * h;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.4;
+      this.radius = Math.random() * 1.2 + 0.6;
+      this.color = colors[Math.floor(Math.random() * colors.length)];
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < 0 || this.x > w) this.vx *= -1;
+      if (this.y < 0 || this.y > h) this.vy *= -1;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
+    }
+  }
+
+  function init() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    particles = [];
+    const count = Math.min(Math.floor((w * h) / 10000), 150);
+    for (let i = 0; i < count; i++) {
+      particles.push(new Particle());
+    }
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, w, h);
+    for (let i = 0; i < particles.length; i++) {
+      particles[i].update();
+      particles[i].draw();
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(255,255,255, ${0.1 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.6;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  init();
+  animate();
+  window.addEventListener('resize', init, { passive: true });
+})();
+
+/* ─── Animated beam background (Hero only) ─────────── */
+(function initBeams() {
+  const heroBg = document.getElementById('hero-bg');
+  if (!heroBg) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.4; mix-blend-mode: screen;';
+  heroBg.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const palette = [ [37, 99, 235], [124, 58, 237], [234, 88, 12] ];
   let beams = [];
+  let w, h;
 
   function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-    beams = Array.from({ length: 10 }, (_, i) => {
+    w = canvas.width = heroBg.clientWidth;
+    h = canvas.height = heroBg.clientHeight;
+    beams = Array.from({ length: 8 }, (_, i) => {
       const col = palette[Math.random() < 0.6 ? 0 : Math.random() < 0.8 ? 1 : 2];
       return {
-        x:  (canvas.width / 10) * i + Math.random() * 80 - 40,
-        w:  Math.random() * 100 + 30,
-        h:  canvas.height + 800,
-        a:  Math.random() * 26 - 13,
-        o:  Math.random() * 0.08 + 0.02,
-        dx: (Math.random() - 0.5) * 0.25,
+        x:  (w / 8) * i + Math.random() * 60 - 30,
+        w:  Math.random() * 80 + 30,
+        h:  h + 400,
+        a:  Math.random() * 20 - 10,
+        o:  Math.random() * 0.12 + 0.03, // Slight opacity tweak
+        dx: (Math.random() - 0.5) * 0.2,
         c:  col,
       };
     });
   }
 
   function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, w, h);
     beams.forEach(b => {
       ctx.save();
-      ctx.translate(b.x + b.w / 2, canvas.height / 2);
+      ctx.translate(b.x + b.w / 2, h / 2);
       ctx.rotate(b.a * Math.PI / 180);
       const g = ctx.createLinearGradient(0, -b.h / 2, 0, b.h / 2);
       const [r, g2, bl] = b.c;
@@ -114,8 +195,8 @@ if (metGrid) countObs.observe(metGrid);
       ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
       ctx.restore();
       b.x += b.dx;
-      if (b.x > canvas.width + 150)  b.x = -150;
-      if (b.x < -150) b.x = canvas.width + 150;
+      if (b.x > w + 100)  b.x = -100;
+      if (b.x < -100) b.x = w + 100;
     });
     requestAnimationFrame(draw);
   }
