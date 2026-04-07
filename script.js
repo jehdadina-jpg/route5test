@@ -240,3 +240,19 @@ const sectionObs = new IntersectionObserver(entries => {
   });
 }, { rootMargin: '-40% 0px -55% 0px' });
 sections.forEach(s => sectionObs.observe(s));
+
+/* ─── FAQ Accordion ────────────────────────────── */
+document.querySelectorAll('.faq-item').forEach(item => {
+  const button = item.querySelector('.faq-question');
+
+  button.addEventListener('click', () => {    
+    // Close other items (cleaner)
+    document.querySelectorAll('.faq-item').forEach(other => {
+      if (other !== item) other.classList.remove('active');
+    });
+
+    item.classList.toggle('active');
+  });
+});
+
+
