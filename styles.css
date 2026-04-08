@@ -178,12 +178,18 @@ nav.scrolled {
 .nav-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #fff;
   text-decoration: none;
+}
+
+.brand-logo {
+  height: 38px;
+  width: auto;
+  display: block;
+}
+
+.brand-logo.footer-logo {
+  height: 32px;
+  opacity: 0.9;
 }
 
 .brand-icon {
